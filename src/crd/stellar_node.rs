@@ -97,6 +97,7 @@ pub struct StellarNodeSpec {
     pub replicas: i32,
 
     /// Suspend the node (scale to 0 without deleting resources)
+    /// The operator still manages the resources, but keeps them inactive.
     #[serde(default)]
     pub suspended: bool,
 

@@ -116,7 +116,34 @@ async fn apply_stellar_node(client: &Client, node: &StellarNode) -> Result<Actio
         return Err(Error::ValidationError(e));
     }
 
-    // Check if suspended
+    // 1. Core infrastructure (PVC and ConfigMap) always managed by operator
+    resources::ensure_pvc(client, node).await?;
+    resources::ensure_config_map(client, node).await?;
+
+    // 2. Maintenance Mode Check
+    // If active, we skip workload management (Step 3) and suspension checks.
+    // This allows a human to manually scale the node up or down as needed.
+    if node.spec.maintenance_mode {
+        info!(
+            "Node {}/{} in Maintenance Mode. Skipping workload updates.",
+            namespace, name
+        );
+
+        resources::ensure_service(client, node).await?;
+
+        update_status(
+            client,
+            node,
+            "Maintenance",
+            Some("Manual maintenance mode active; workload management paused"),
+        )
+        .await?;
+
+        return Ok(Action::requeue(Duration::from_secs(60)));
+    }
+
+    // 3. Normal Mode: Handle suspension
+    // This only runs if NOT in maintenance mode.
     if node.spec.suspended {
         info!("Node {}/{} is suspended, scaling to 0", namespace, name);
         update_status(client, node, "Suspended", Some("Node is suspended"), 0).await?;
@@ -137,20 +164,15 @@ async fn apply_stellar_node(client: &Client, node: &StellarNode) -> Result<Actio
     // 3. Create/update the Deployment/StatefulSet based on node type
     match node.spec.node_type {
         NodeType::Validator => {
-            // Validators use StatefulSet for stable identity
             resources::ensure_statefulset(client, node).await?;
-            info!("StatefulSet ensured for validator {}/{}", namespace, name);
         }
         NodeType::Horizon | NodeType::SorobanRpc => {
-            // RPC nodes use Deployment for easy scaling
             resources::ensure_deployment(client, node).await?;
-            info!("Deployment ensured for RPC node {}/{}", namespace, name);
         }
     }
 
-    // 4. Create/update the Service
+    // 5. Ensure Service and finalize status
     resources::ensure_service(client, node).await?;
-    info!("Service ensured for {}/{}", namespace, name);
 
 
     // 5. Perform health check to determine if node is ready
