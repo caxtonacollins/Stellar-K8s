@@ -121,21 +121,18 @@ pub struct StellarNodeSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ingress: Option<IngressConfig>,
 
+    /// Maintenance mode (skips workload updates)
+    #[serde(default)]
+    pub maintenance_mode: bool,
     /// Network Policy configuration for restricting ingress traffic
     /// When enabled, creates a deny-all policy with explicit allow rules
     /// for peer-to-peer (Validators), API access (Horizon/Soroban), and metrics
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_policy: Option<NetworkPolicyConfig>,
 
-    /// MetalLB LoadBalancer configuration for external access
-    /// Supports L2 and BGP modes for global node discovery via anycast
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub load_balancer: Option<LoadBalancerConfig>,
-
-    /// Global node discovery configuration for cross-region peering
-    /// Enables topology-aware routing and automatic DNS registration
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub global_discovery: Option<GlobalDiscoveryConfig>,
+    #[schemars(with = "serde_json::Value")]
+    pub topology_spread_constraints: Option<Vec<k8s_openapi::api::core::v1::TopologySpreadConstraint>>,
 }
 
 fn default_replicas() -> i32 {

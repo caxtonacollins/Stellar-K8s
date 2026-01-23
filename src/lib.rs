@@ -15,3 +15,11 @@ pub mod rest_api;
 pub mod webhook;
 
 pub use crate::error::{Error, Result};
+
+/// Configuration for mTLS
+#[derive(Clone, Debug)]
+pub struct MtlsConfig {
+    pub cert_pem: Vec<u8>,
+    pub key_pem: Vec<u8>,
+    pub ca_pem: Vec<u8>,
+}
