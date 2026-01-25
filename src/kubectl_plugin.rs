@@ -8,11 +8,11 @@
 use std::process;
 
 use clap::{Parser, Subcommand};
-use kube::{api::Api, Client, ResourceExt};
 use k8s_openapi::api::core::v1::Pod;
+use kube::{api::Api, Client, ResourceExt};
 
-use stellar_k8s::crd::StellarNode;
 use stellar_k8s::controller::check_node_health;
+use stellar_k8s::crd::StellarNode;
 use stellar_k8s::error::{Error, Result};
 
 /// Helper function to get phase from node status, deriving from conditions if needed
@@ -112,37 +112,64 @@ async fn run(cli: Cli) -> Result<()> {
             tail,
         } => {
             let namespace = cli.namespace.as_deref().unwrap_or("default");
-            logs(&client, namespace, &node_name, container.as_deref(), follow, tail).await
+            logs(
+                &client,
+                namespace,
+                &node_name,
+                container.as_deref(),
+                follow,
+                tail,
+            )
+            .await
         }
         Commands::Status {
             node_name,
             all_namespaces,
         } => {
-            status(&client, node_name.as_deref(), all_namespaces, cli.namespace.as_deref(), &cli.output).await
+            status(
+                &client,
+                node_name.as_deref(),
+                all_namespaces,
+                cli.namespace.as_deref(),
+                &cli.output,
+            )
+            .await
         }
         Commands::SyncStatus {
             node_name,
             all_namespaces,
         } => {
-            status(&client, node_name.as_deref(), all_namespaces, cli.namespace.as_deref(), &cli.output).await
+            status(
+                &client,
+                node_name.as_deref(),
+                all_namespaces,
+                cli.namespace.as_deref(),
+                &cli.output,
+            )
+            .await
         }
     }
 }
 
 /// Helper function to format nodes as JSON
 fn format_nodes_json(nodes: &[StellarNode]) -> Result<String> {
-    serde_json::to_string_pretty(nodes).map_err(|e| Error::ConfigError(format!("JSON serialization error: {}", e)))
+    serde_json::to_string_pretty(nodes)
+        .map_err(|e| Error::ConfigError(format!("JSON serialization error: {}", e)))
 }
 
 /// Helper function to format nodes as YAML
 fn format_nodes_yaml(nodes: &[StellarNode]) -> Result<String> {
-    serde_yaml::to_string(nodes).map_err(|e| Error::ConfigError(format!("YAML serialization error: {}", e)))
+    serde_yaml::to_string(nodes)
+        .map_err(|e| Error::ConfigError(format!("YAML serialization error: {}", e)))
 }
 
 /// Helper function to format node list as table
 fn format_nodes_table(nodes: &[StellarNode], show_namespace: bool) {
     if show_namespace {
-        println!("{:<30} {:<15} {:<15} {:<10} {:<15} {:<10}", "NAME", "TYPE", "NETWORK", "REPLICAS", "PHASE", "NAMESPACE");
+        println!(
+            "{:<30} {:<15} {:<15} {:<10} {:<15} {:<10}",
+            "NAME", "TYPE", "NETWORK", "REPLICAS", "PHASE", "NAMESPACE"
+        );
         println!("{}", "-".repeat(95));
         for node in nodes {
             let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
@@ -157,7 +184,10 @@ fn format_nodes_table(nodes: &[StellarNode], show_namespace: bool) {
             );
         }
     } else {
-        println!("{:<30} {:<15} {:<15} {:<10} {:<15}", "NAME", "TYPE", "NETWORK", "REPLICAS", "PHASE");
+        println!(
+            "{:<30} {:<15} {:<15} {:<10} {:<15}",
+            "NAME", "TYPE", "NETWORK", "REPLICAS", "PHASE"
+        );
         println!("{}", "-".repeat(85));
         for node in nodes {
             let name = node.name_any();
@@ -174,14 +204,25 @@ fn format_nodes_table(nodes: &[StellarNode], show_namespace: bool) {
 }
 
 /// List all StellarNode resources
-async fn list_nodes(client: &Client, all_namespaces: bool, namespace: Option<&str>, output: &str) -> Result<()> {
+async fn list_nodes(
+    client: &Client,
+    all_namespaces: bool,
+    namespace: Option<&str>,
+    output: &str,
+) -> Result<()> {
     let nodes = if all_namespaces {
         let api: Api<StellarNode> = Api::all(client.clone());
-        api.list(&Default::default()).await.map_err(Error::KubeError)?.items
+        api.list(&Default::default())
+            .await
+            .map_err(Error::KubeError)?
+            .items
     } else {
         let ns = namespace.unwrap_or("default");
         let api: Api<StellarNode> = Api::namespaced(client.clone(), ns);
-        api.list(&Default::default()).await.map_err(Error::KubeError)?.items
+        api.list(&Default::default())
+            .await
+            .map_err(Error::KubeError)?
+            .items
     };
 
     match output {
@@ -210,10 +251,7 @@ async fn logs(
 ) -> Result<()> {
     // First, verify the StellarNode exists
     let node_api: Api<StellarNode> = Api::namespaced(client.clone(), namespace);
-    let _node = node_api
-        .get(node_name)
-        .await
-        .map_err(Error::KubeError)?;
+    let _node = node_api.get(node_name).await.map_err(Error::KubeError)?;
 
     // Find pods using the same label selector as the controller
     let pod_api: Api<Pod> = Api::namespaced(client.clone(), namespace);
@@ -245,16 +283,16 @@ async fn logs(
     if follow {
         let pod = &pods.items[0];
         let pod_name = pod.name_any();
-        
+
         let mut cmd = std::process::Command::new("kubectl");
         cmd.arg("logs");
         cmd.arg("-n").arg(namespace);
         cmd.arg(&pod_name);
-        
+
         if let Some(container_name) = container {
             cmd.arg("-c").arg(container_name);
         }
-        
+
         cmd.arg("-f");
         cmd.arg("--tail").arg(tail.to_string());
 
@@ -264,7 +302,7 @@ async fn logs(
                 pod_name, e
             ))
         })?;
-        
+
         if !status.success() {
             return Err(Error::ConfigError(format!(
                 "kubectl logs failed for pod {} with exit code: {:?}",
@@ -276,22 +314,22 @@ async fn logs(
         // Non-follow mode: show logs from all pods
         for (idx, pod) in pods.items.iter().enumerate() {
             let pod_name = pod.name_any();
-            
+
             if pods.items.len() > 1 {
                 println!("\n=== Pod: {} ===", pod_name);
             }
-            
+
             // Use kubectl logs command via exec since kube-rs doesn't have a direct logs API
             // This is the standard way kubectl plugins handle logs
             let mut cmd = std::process::Command::new("kubectl");
             cmd.arg("logs");
             cmd.arg("-n").arg(namespace);
             cmd.arg(&pod_name);
-            
+
             if let Some(container_name) = container {
                 cmd.arg("-c").arg(container_name);
             }
-            
+
             cmd.arg("--tail").arg(tail.to_string());
 
             let output = cmd.output().map_err(|e| {
@@ -302,7 +340,7 @@ async fn logs(
                     e
                 ))
             })?;
-            
+
             if !output.status.success() {
                 return Err(Error::ConfigError(format!(
                     "kubectl logs failed for pod #{} ({}): {}",
@@ -311,7 +349,7 @@ async fn logs(
                     String::from_utf8_lossy(&output.stderr)
                 )));
             }
-            
+
             print!("{}", String::from_utf8_lossy(&output.stdout));
         }
     }
@@ -336,13 +374,19 @@ async fn status(
     } else if all_namespaces {
         // Get all nodes across all namespaces
         let api: Api<StellarNode> = Api::all(client.clone());
-        let list = api.list(&Default::default()).await.map_err(Error::KubeError)?;
+        let list = api
+            .list(&Default::default())
+            .await
+            .map_err(Error::KubeError)?;
         list.items
     } else {
         // Get nodes in specified or default namespace
         let ns = namespace.unwrap_or("default");
         let api: Api<StellarNode> = Api::namespaced(client.clone(), ns);
-        let list = api.list(&Default::default()).await.map_err(Error::KubeError)?;
+        let list = api
+            .list(&Default::default())
+            .await
+            .map_err(Error::KubeError)?;
         list.items
     };
 
@@ -368,7 +412,11 @@ async fn status(
                     "message": health_result.message,
                 }));
             }
-            println!("{}", serde_json::to_string_pretty(&results).map_err(|e| Error::ConfigError(format!("JSON serialization error: {}", e)))?);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&results)
+                    .map_err(|e| Error::ConfigError(format!("JSON serialization error: {}", e)))?
+            );
         }
         "yaml" => {
             let mut results = Vec::new();
@@ -386,20 +434,28 @@ async fn status(
                     "message": health_result.message,
                 }));
             }
-            println!("{}", serde_yaml::to_string(&results).map_err(|e| Error::ConfigError(format!("YAML serialization error: {}", e)))?);
+            println!(
+                "{}",
+                serde_yaml::to_string(&results)
+                    .map_err(|e| Error::ConfigError(format!("YAML serialization error: {}", e)))?
+            );
         }
         _ => {
             // Table format
             // Show namespace column when viewing all namespaces OR when no specific node/namespace is specified
             let show_namespace = all_namespaces || (node_name.is_none() && namespace.is_none());
-            
+
             if show_namespace {
-                println!("{:<30} {:<15} {:<15} {:<10} {:<10} {:<10} {:<15} {:<20}", 
-                    "NAME", "NAMESPACE", "TYPE", "HEALTHY", "SYNCED", "LEDGER", "PHASE", "MESSAGE");
+                println!(
+                    "{:<30} {:<15} {:<15} {:<10} {:<10} {:<10} {:<15} {:<20}",
+                    "NAME", "NAMESPACE", "TYPE", "HEALTHY", "SYNCED", "LEDGER", "PHASE", "MESSAGE"
+                );
                 println!("{}", "-".repeat(125));
             } else {
-                println!("{:<30} {:<15} {:<10} {:<10} {:<15} {:<20}", 
-                    "NAME", "TYPE", "HEALTHY", "SYNCED", "PHASE", "MESSAGE");
+                println!(
+                    "{:<30} {:<15} {:<10} {:<10} {:<15} {:<20}",
+                    "NAME", "TYPE", "HEALTHY", "SYNCED", "PHASE", "MESSAGE"
+                );
                 println!("{}", "-".repeat(100));
             }
 
@@ -410,7 +466,8 @@ async fn status(
                 let phase = get_node_phase(&node);
                 let healthy = if health_result.healthy { "Yes" } else { "No" };
                 let synced = if health_result.synced { "Yes" } else { "No" };
-                let ledger = health_result.ledger_sequence
+                let ledger = health_result
+                    .ledger_sequence
                     .map(|l| l.to_string())
                     .unwrap_or_else(|| "N/A".to_string());
                 let message = if health_result.message.len() > 17 {
@@ -421,11 +478,15 @@ async fn status(
 
                 if show_namespace {
                     let node_namespace = node.namespace().unwrap_or_else(|| "default".to_string());
-                    println!("{:<30} {:<15} {:<15} {:<10} {:<10} {:<10} {:<15} {:<20}", 
-                        name, node_namespace, node_type, healthy, synced, ledger, phase, message);
+                    println!(
+                        "{:<30} {:<15} {:<15} {:<10} {:<10} {:<10} {:<15} {:<20}",
+                        name, node_namespace, node_type, healthy, synced, ledger, phase, message
+                    );
                 } else {
-                    println!("{:<30} {:<15} {:<10} {:<10} {:<15} {:<20}", 
-                        name, node_type, healthy, synced, phase, message);
+                    println!(
+                        "{:<30} {:<15} {:<10} {:<10} {:<15} {:<20}",
+                        name, node_type, healthy, synced, phase, message
+                    );
                 }
             }
         }
@@ -438,13 +499,13 @@ async fn status(
 mod tests {
     use super::*;
     use kube::api::ObjectMeta;
-    use stellar_k8s::crd::{Condition, NodeType, StellarNodeSpec, StellarNodeStatus};
     use stellar_k8s::controller::conditions::{CONDITION_STATUS_TRUE, CONDITION_TYPE_READY};
+    use stellar_k8s::crd::{Condition, NodeType, StellarNodeSpec, StellarNodeStatus};
 
     fn create_test_node(name: &str, namespace: &str, node_type: NodeType) -> StellarNode {
-        use stellar_k8s::crd::StellarNetwork;
         use chrono::Utc;
-        
+        use stellar_k8s::crd::StellarNetwork;
+
         // Create a Ready condition so derive_phase_from_conditions() returns "Ready"
         let ready_condition = Condition {
             type_: CONDITION_TYPE_READY.to_string(),
@@ -454,7 +515,7 @@ mod tests {
             message: "All sub-resources are healthy and operational".to_string(),
             observed_generation: None,
         };
-        
+
         StellarNode {
             metadata: ObjectMeta {
                 name: Some(name.to_string()),
@@ -502,7 +563,7 @@ mod tests {
             create_test_node("node1", "default", NodeType::Validator),
             create_test_node("node2", "default", NodeType::Horizon),
         ];
-        
+
         let result = format_nodes_json(&nodes);
         assert!(result.is_ok());
         let json = result.unwrap();
@@ -514,10 +575,8 @@ mod tests {
 
     #[test]
     fn test_format_nodes_yaml() {
-        let nodes = vec![
-            create_test_node("node1", "default", NodeType::Validator),
-        ];
-        
+        let nodes = vec![create_test_node("node1", "default", NodeType::Validator)];
+
         let result = format_nodes_yaml(&nodes);
         assert!(result.is_ok());
         let yaml = result.unwrap();
@@ -531,17 +590,15 @@ mod tests {
             create_test_node("node1", "ns1", NodeType::Validator),
             create_test_node("node2", "ns2", NodeType::Horizon),
         ];
-        
+
         // Test that function doesn't panic
         format_nodes_table(&nodes, true);
     }
 
     #[test]
     fn test_format_nodes_table_without_namespace() {
-        let nodes = vec![
-            create_test_node("node1", "default", NodeType::Validator),
-        ];
-        
+        let nodes = vec![create_test_node("node1", "default", NodeType::Validator)];
+
         format_nodes_table(&nodes, false);
     }
 
@@ -550,10 +607,10 @@ mod tests {
         // Test that the condition for showing namespace is consistent
         // show_namespace = all_namespaces || (node_name.is_none() && namespace.is_none())
         let test_cases = vec![
-            (true, None, None, true),   // all_namespaces=true -> show namespace
-            (false, None, None, true),  // node_name=None && namespace=None -> show namespace
+            (true, None, None, true),           // all_namespaces=true -> show namespace
+            (false, None, None, true), // node_name=None && namespace=None -> show namespace
             (false, Some("node"), None, false), // node_name=Some && namespace=None -> hide namespace
-            (false, None, Some("ns"), false),  // node_name=None && namespace=Some -> hide namespace
+            (false, None, Some("ns"), false), // node_name=None && namespace=Some -> hide namespace
             (false, Some("node"), Some("ns"), false), // both Some -> hide namespace
         ];
 
