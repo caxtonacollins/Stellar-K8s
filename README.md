@@ -84,9 +84,8 @@ kubectl get stellarnodes -n stellar
 ---
 
 ## 🤝 Contributing
-1.  Look for issues labeled `stellar-wave` in our [Issue Tracker](https://github.com/stellar/stellar-k8s/issues).
-2.  Comment on the issue you'd like to tackle.
-3.  Submit a PR referencing the issue.
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on our development process, coding standards, and how to submit pull requests.
 
 ---
 
