@@ -7,6 +7,7 @@ pub mod controller;
 pub mod crd;
 pub mod error;
 pub mod telemetry;
+pub mod scheduler;
 
 #[cfg(feature = "rest-api")]
 pub mod rest_api;
