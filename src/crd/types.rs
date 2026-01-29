@@ -395,6 +395,66 @@ fn default_ingest_workers() -> u32 {
     1
 }
 
+/// Captive Core configuration for Soroban RPC
+///
+/// Structured configuration for Captive Core, which is used by Soroban RPC nodes
+/// to stream ledger data from the Stellar network.
+///
+/// This provides a type-safe alternative to raw TOML strings, ensuring configuration
+/// correctness at compile time and runtime.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use stellar_k8s::crd::CaptiveCoreConfig;
+///
+/// let config = CaptiveCoreConfig {
+///     network_passphrase: None, // Will use network default
+///     history_archive_urls: vec![
+///         "https://history.stellar.org/prd/core-live/core_live_001".to_string(),
+///         "https://history.stellar.org/prd/core-live/core_live_002".to_string(),
+///     ],
+///     peer_port: None,    // Will use default 11625
+///     http_port: None,    // Will use default 11626
+///     log_level: Some("info".to_string()),
+///     additional_config: None,
+/// };
+/// ```
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CaptiveCoreConfig {
+    /// Network passphrase override
+    /// If not provided, will use the passphrase from the StellarNode network field
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_passphrase: Option<String>,
+
+    /// History archive URLs for Captive Core to fetch ledger data
+    /// At least one archive URL is required
+    /// Multiple archives provide redundancy and load distribution
+    #[serde(default)]
+    pub history_archive_urls: Vec<String>,
+
+    /// Peer port for Stellar Core (default: 11625)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub peer_port: Option<u16>,
+
+    /// HTTP port for Stellar Core (default: 11626)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http_port: Option<u16>,
+
+    /// Log level for Captive Core (default: "info")
+    /// Valid values: "fatal", "error", "warning", "info", "debug", "trace"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub log_level: Option<String>,
+
+    /// Additional custom TOML configuration
+    /// This is an escape hatch for advanced users who need to add
+    /// custom configuration not covered by the structured fields
+    /// The content will be appended to the generated TOML
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub additional_config: Option<String>,
+}
+
 /// Soroban RPC server configuration
 ///
 /// Configuration for Soroban RPC nodes that handle smart contract simulation
@@ -403,11 +463,22 @@ fn default_ingest_workers() -> u32 {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use stellar_k8s::crd::SorobanConfig;
+/// use stellar_k8s::crd::{SorobanConfig, CaptiveCoreConfig};
 ///
+/// // Recommended: Use structured configuration
 /// let config = SorobanConfig {
 ///     stellar_core_url: "http://core.default:11626".to_string(),
-///     captive_core_config: None,
+///     captive_core_config: None, // Deprecated
+///     captive_core_structured_config: Some(CaptiveCoreConfig {
+///         network_passphrase: None,
+///         history_archive_urls: vec![
+///             "https://history.stellar.org/prd/core-testnet/core_testnet_001".to_string(),
+///         ],
+///         peer_port: None,
+///         http_port: None,
+///         log_level: Some("info".to_string()),
+///         additional_config: None,
+///     }),
 ///     enable_preflight: true,
 ///     max_events_per_request: 10000,
 /// };
@@ -417,12 +488,29 @@ fn default_ingest_workers() -> u32 {
 pub struct SorobanConfig {
     /// Stellar Core endpoint URL
     pub stellar_core_url: String,
+
     /// Captive Core configuration (TOML format)
+    ///
+    /// **DEPRECATED**: Use `captive_core_structured_config` instead.
+    /// This field is maintained for backward compatibility only.
+    #[deprecated(
+        since = "0.2.0",
+        note = "Use captive_core_structured_config for type-safe configuration"
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub captive_core_config: Option<String>,
+
+    /// Structured Captive Core configuration
+    ///
+    /// This is the recommended way to configure Captive Core.
+    /// If both this and `captive_core_config` are provided, this field takes precedence.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub captive_core_structured_config: Option<CaptiveCoreConfig>,
+
     /// Enable transaction simulation preflight
     #[serde(default = "default_true")]
     pub enable_preflight: bool,
+
     /// Maximum number of events to return per request
     #[serde(default = "default_max_events")]
     pub max_events_per_request: u32,

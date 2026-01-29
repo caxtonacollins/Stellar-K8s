@@ -248,8 +248,30 @@ fn build_config_map(
                     "STELLAR_CORE_URL".to_string(),
                     config.stellar_core_url.clone(),
                 );
-                if let Some(captive_config) = &config.captive_core_config {
-                    data.insert("captive-core.cfg".to_string(), captive_config.clone());
+
+                // Try to generate TOML from structured config (preferred)
+                if config.captive_core_structured_config.is_some() {
+                    match crate::controller::captive_core::CaptiveCoreConfigBuilder::from_node_config(node) {
+                        Ok(builder) => {
+                            match builder.build_toml() {
+                                Ok(toml) => {
+                                    data.insert("captive-core.cfg".to_string(), toml);
+                                }
+                                Err(e) => {
+                                    tracing::warn!("Failed to build Captive Core TOML: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to create Captive Core config builder: {}", e);
+                        }
+                    }
+                } else {
+                    // Fallback to deprecated raw TOML for backward compatibility
+                    #[allow(deprecated)]
+                    if let Some(captive_config) = &config.captive_core_config {
+                        data.insert("captive-core.cfg".to_string(), captive_config.clone());
+                    }
                 }
             }
         }
