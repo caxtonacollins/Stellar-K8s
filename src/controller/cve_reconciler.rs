@@ -1,10 +1,3 @@
-//! CVE reconciliation handler
-//!
-//! This module is integrated into the main reconciliation loop and handles:
-//! 1. Periodic image scanning for CVEs
-//! 2. Canary deployment and testing when vulnerabilities are found
-//! 3. Rolling updates to patched versions
-//! 4. Monitoring consensus health and rolling back if needed
 
 use chrono::Utc;
 use k8s_openapi::api::apps::v1::Deployment;
