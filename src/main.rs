@@ -124,11 +124,7 @@ async fn run_webhook(args: WebhookArgs) -> Result<(), Error> {
 
     // Initialize tracing
     let env_filter = EnvFilter::builder()
-        .with_default_directive(
-            args.log_level
-                .parse()
-                .unwrap_or(Level::INFO.into()),
-        )
+        .with_default_directive(args.log_level.parse().unwrap_or(Level::INFO.into()))
         .from_env_lossy();
 
     tracing_subscriber::registry()
@@ -157,7 +153,10 @@ async fn run_webhook(args: WebhookArgs) -> Result<(), Error> {
 
     // Configure TLS if provided
     if let (Some(cert_path), Some(key_path)) = (args.cert_path, args.key_path) {
-        info!("Configuring TLS with cert: {}, key: {}", cert_path, key_path);
+        info!(
+            "Configuring TLS with cert: {}, key: {}",
+            cert_path, key_path
+        );
         server = server.with_tls(cert_path, key_path);
     } else {
         warn!("Running webhook server without TLS (not recommended for production)");
