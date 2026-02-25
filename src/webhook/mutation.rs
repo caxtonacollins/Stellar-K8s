@@ -88,20 +88,15 @@ pub fn apply_mutations(req: &AdmissionRequest<StellarNode>) -> Result<Option<ser
         let has_labels = object.metadata.labels.is_some();
 
         for (key, value) in labels {
-            let path = if has_labels {
+            let path = if has_labels || patches.iter().any(|p| p["path"] == "/metadata/labels") {
                 format!("/metadata/labels/{}", key.replace('/', "~1"))
             } else {
-                // Need to create labels object first
-                if patches.iter().any(|p| p["path"] == "/metadata/labels") {
-                    format!("/metadata/labels/{}", key.replace('/', "~1"))
-                } else {
-                    patches.push(json!({
-                        "op": "add",
-                        "path": "/metadata/labels",
-                        "value": {}
-                    }));
-                    format!("/metadata/labels/{}", key.replace('/', "~1"))
-                }
+                patches.push(json!({
+                    "op": "add",
+                    "path": "/metadata/labels",
+                    "value": {}
+                }));
+                format!("/metadata/labels/{}", key.replace('/', "~1"))
             };
 
             patches.push(json!({
@@ -120,9 +115,9 @@ pub fn apply_mutations(req: &AdmissionRequest<StellarNode>) -> Result<Option<ser
         let has_annotations = object.metadata.annotations.is_some();
 
         for (key, value) in annotations {
-            let path = if has_annotations {
-                format!("/metadata/annotations/{}", key.replace('/', "~1"))
-            } else if patches.iter().any(|p| p["path"] == "/metadata/annotations") {
+            let path = if has_annotations
+                || patches.iter().any(|p| p["path"] == "/metadata/annotations")
+            {
                 format!("/metadata/annotations/{}", key.replace('/', "~1"))
             } else {
                 patches.push(json!({
