@@ -37,8 +37,8 @@ mod remediation_test;
 mod resources;
 #[cfg(test)]
 mod resources_test;
-mod snapshot;
 pub mod service_mesh;
+mod snapshot;
 pub mod traffic;
 #[cfg(test)]
 mod traffic_test;
