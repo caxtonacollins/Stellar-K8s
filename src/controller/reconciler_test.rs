@@ -57,6 +57,7 @@ mod tests {
                 },
                 validator_config: Some(ValidatorConfig {
                     seed_secret_ref: "validator-seed".to_string(),
+                    seed_secret_source: Default::default(),
                     quorum_set: Some(
                         r#"[QUORUM_SET]
 THRESHOLD_PERCENT=67
@@ -94,6 +95,8 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                 topology_spread_constraints: None,
                 cve_handling: None,
                 read_replica_config: None,
+                oci_snapshot: None,
+                service_mesh: None,
                 read_pool_endpoint: None,
                 resource_meta: None,
                 vpa_config: None,
@@ -174,6 +177,8 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                 topology_spread_constraints: None,
                 cve_handling: None,
                 read_replica_config: None,
+                oci_snapshot: None,
+                service_mesh: None,
                 read_pool_endpoint: None,
                 resource_meta: None,
                 vpa_config: None,
@@ -253,6 +258,8 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                 topology_spread_constraints: None,
                 cve_handling: None,
                 read_replica_config: None,
+                oci_snapshot: None,
+                service_mesh: None,
                 read_pool_endpoint: None,
                 resource_meta: None,
                 vpa_config: None,
