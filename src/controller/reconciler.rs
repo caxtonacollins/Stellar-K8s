@@ -107,7 +107,7 @@ pub struct ControllerState {
 /// ```rust,no_run
 /// use std::sync::Arc;
 /// use std::sync::atomic::AtomicBool;
-/// use stellar_k8s::controller::{ControllerState, run_controller};
+/// use stellar_k8s::controller::{ControllerState, run_controller, quorum_optimizer::QuorumOptimizer};
 /// use kube::Client;
 ///
 /// #[tokio::main]
@@ -120,6 +120,7 @@ pub struct ControllerState {
 ///         operator_namespace: "stellar-operator".to_string(),
 ///         dry_run: false,
 ///         is_leader: Arc::new(AtomicBool::new(true)),
+///         quorum_optimizer: Arc::new(tokio::sync::Mutex::new(QuorumOptimizer::default())),
 ///     });
 ///     run_controller(state).await?;
 ///     Ok(())
