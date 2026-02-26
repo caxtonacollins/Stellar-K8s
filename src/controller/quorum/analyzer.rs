@@ -175,7 +175,7 @@ impl QuorumAnalyzer {
         let score = W1 * critical_ratio + W2 * overlap_penalty + W3 * latency_penalty;
 
         // Clamp to [0.0, 1.0]
-        score.max(0.0).min(1.0)
+        score.clamp(0.0, 1.0)
     }
 
     /// Check if cached result should be used
@@ -325,13 +325,13 @@ mod tests {
 
         // Test various scenarios
         let score1 = analyzer.calculate_fragility_score(0, 5, 0.0, 10);
-        assert!(score1 >= 0.0 && score1 <= 1.0);
+        assert!((0.0..=1.0).contains(&score1));
 
         let score2 = analyzer.calculate_fragility_score(5, 0, 100.0, 10);
-        assert!(score2 >= 0.0 && score2 <= 1.0);
+        assert!((0.0..=1.0).contains(&score2));
 
         let score3 = analyzer.calculate_fragility_score(10, 0, 1000.0, 10);
-        assert!(score3 >= 0.0 && score3 <= 1.0);
+        assert!((0.0..=1.0).contains(&score3));
     }
 
     #[test]
