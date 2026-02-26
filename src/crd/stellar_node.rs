@@ -209,7 +209,7 @@ impl StellarNodeSpec {
     /// # dr_config: None,
     /// # topology_spread_constraints: None,
     /// # cve_handling: None,
-    /// # read_replica_config: None,
+    /// # read_replica_config: None, db_maintenance_config: None, db_maintenance_config: None,
     /// # vpa_config: None,
     /// # resource_meta: None,
     /// };
@@ -973,6 +973,7 @@ mod tests {
             cross_cluster: None,
             cve_handling: None,
             read_replica_config: None,
+            db_maintenance_config: None,
             resource_meta: None,
             vpa_config: None,
         };
@@ -1021,6 +1022,7 @@ mod tests {
             cross_cluster: None,
             cve_handling: None,
             read_replica_config: None,
+            db_maintenance_config: None,
             resource_meta: None,
             vpa_config: None,
         };

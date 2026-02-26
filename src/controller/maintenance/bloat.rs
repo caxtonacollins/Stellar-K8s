@@ -54,7 +54,7 @@ impl BloatDetector {
         // Simplistic implementation for now
         let query = "SELECT relname FROM pg_class WHERE relkind = 'r'";
         let rows: Vec<PgRow> = sqlx::query(query).fetch_all(&self.pool).await?;
-        
+
         let mut bloated = Vec::new();
         for row in rows {
             let table: String = Row::get::<String, usize>(&row, 0);

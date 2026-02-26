@@ -44,6 +44,7 @@ mod tests {
             topology_spread_constraints: None,
             cve_handling: None,
             read_replica_config: None,
+            db_maintenance_config: None,
             resource_meta: None,
             vpa_config: None,
         }
@@ -99,6 +100,7 @@ mod tests {
                     strategy: strategy.clone(),
                     archive_sharding: false,
                 }),
+                db_maintenance_config: None,
                 resource_meta: None,
                 vpa_config: None,
             },
@@ -145,6 +147,7 @@ mod tests {
                 network_policy: None,
                 dr_config: None,
                 topology_spread_constraints: None,
+                db_maintenance_config: None,
                 cve_handling: None,
                 read_replica_config: None,
                 resource_meta: None,

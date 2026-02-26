@@ -2,13 +2,13 @@
 //!
 //! Manages the lifecycle of maintenance windows and triggers DB tasks.
 
+use super::bloat::BloatDetector;
+use super::coordinator::MaintenanceCoordinator;
 use crate::crd::StellarNode;
 use crate::error::Result;
 use chrono::{Local, NaiveTime};
-use tracing::{debug, info};
-use super::bloat::BloatDetector;
-use super::coordinator::MaintenanceCoordinator;
 use sqlx::PgPool;
+use tracing::{debug, info};
 
 pub struct MaintenanceController {
     coordinator: MaintenanceCoordinator,
@@ -27,8 +27,9 @@ impl MaintenanceController {
         };
 
         let now = Local::now().time();
-        let start = NaiveTime::parse_from_str(&config.window_start, "%H:%M").unwrap_or_else(|_| NaiveTime::from_hms_opt(2, 0, 0).unwrap());
-        
+        let start = NaiveTime::parse_from_str(&config.window_start, "%H:%M")
+            .unwrap_or_else(|_| NaiveTime::from_hms_opt(2, 0, 0).unwrap());
+
         // Simplistic window check
         now >= start && now <= (start + chrono::Duration::hours(2)) // Default 2h window if duration not parsed
     }
@@ -41,16 +42,24 @@ impl MaintenanceController {
 
         let config = node.spec.db_maintenance_config.as_ref().unwrap();
         let detector = BloatDetector::new(pool.clone());
-        
-        let bloated_tables = detector.get_bloated_tables(config.bloat_threshold_percent).await?;
-        
+
+        let bloated_tables = detector
+            .get_bloated_tables(config.bloat_threshold_percent)
+            .await?;
+
         if bloated_tables.is_empty() {
-            debug!("No bloated tables found for node {}", node.metadata.name.as_ref().unwrap());
+            debug!(
+                "No bloated tables found for node {}",
+                node.metadata.name.as_ref().unwrap()
+            );
             return Ok(());
         }
 
-        info!("Starting maintenance for node {}: found {} bloated tables", 
-            node.metadata.name.as_ref().unwrap(), bloated_tables.len());
+        info!(
+            "Starting maintenance for node {}: found {} bloated tables",
+            node.metadata.name.as_ref().unwrap(),
+            bloated_tables.len()
+        );
 
         if config.read_pool_coordination {
             self.coordinator.prepare_node(node).await?;
@@ -58,11 +67,15 @@ impl MaintenanceController {
 
         for table in bloated_tables {
             info!("Running VACUUM FULL on table {}", table);
-            sqlx::query(&format!("VACUUM FULL {}", table)).execute(&pool).await?;
-            
+            sqlx::query(&format!("VACUUM FULL {}", table))
+                .execute(&pool)
+                .await?;
+
             if config.auto_reindex {
                 info!("Reindexing table {}", table);
-                sqlx::query(&format!("REINDEX TABLE {}", table)).execute(&pool).await?;
+                sqlx::query(&format!("REINDEX TABLE {}", table))
+                    .execute(&pool)
+                    .await?;
             }
         }
 
