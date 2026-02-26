@@ -700,6 +700,8 @@ mod tests {
                 last_migrated_version: None,
                 dynamic_quorum: None,
                 ledger_updated_at: None,
+                quorum_fragility: None,
+                quorum_analysis_timestamp: None,
             }),
         }
     }
