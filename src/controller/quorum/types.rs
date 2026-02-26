@@ -17,11 +17,11 @@ pub struct QuorumSetInfo {
     /// Threshold - number of validators that must agree
     #[serde(rename = "t")]
     pub threshold: u32,
-    
+
     /// List of validator public keys
     #[serde(rename = "v", default)]
     pub validators: Vec<String>,
-    
+
     /// Nested inner quorum sets
     #[serde(rename = "innerSets", default)]
     pub inner_sets: Vec<InnerQuorumSetInfo>,
@@ -33,7 +33,7 @@ pub struct InnerQuorumSetInfo {
     /// Threshold for this inner set
     #[serde(rename = "t")]
     pub threshold: u32,
-    
+
     /// Validators in this inner set
     #[serde(rename = "v", default)]
     pub validators: Vec<String>,
@@ -44,11 +44,11 @@ pub struct InnerQuorumSetInfo {
 pub struct BallotState {
     /// Current SCP phase (PREPARE, CONFIRM, EXTERNALIZE)
     pub phase: String,
-    
+
     /// Ballot counter
     #[serde(rename = "ballotCounter", default)]
     pub ballot_counter: u32,
-    
+
     /// Hash of the value being voted on
     #[serde(rename = "valueHash", default)]
     pub value_hash: String,
@@ -60,7 +60,7 @@ pub struct NominationState {
     /// Values being voted on
     #[serde(default)]
     pub votes: Vec<String>,
-    
+
     /// Values that have been accepted
     #[serde(default)]
     pub accepted: Vec<String>,
@@ -71,11 +71,11 @@ pub struct NominationState {
 pub struct PeerInfo {
     /// Peer public key
     pub id: String,
-    
+
     /// Peer address
     #[serde(default)]
     pub address: String,
-    
+
     /// Connection state
     #[serde(default)]
     pub state: String,

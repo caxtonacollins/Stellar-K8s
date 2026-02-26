@@ -52,7 +52,7 @@ impl QuorumGraph {
     }
 
     /// Find critical nodes in the quorum
-    /// 
+    ///
     /// A node is critical if removing it breaks quorum intersection
     pub fn find_critical_nodes(&self) -> CriticalNodeAnalysis {
         let mut critical_nodes = Vec::new();
@@ -70,7 +70,7 @@ impl QuorumGraph {
         // Test each node for criticality
         for node_key in self.nodes.keys() {
             let graph_without_node = self.remove_node(node_key);
-            
+
             if !graph_without_node.has_quorum_intersection() {
                 debug!("Node {} is critical", node_key);
                 critical_nodes.push(node_key.clone());
@@ -93,7 +93,7 @@ impl QuorumGraph {
 
         // Get all quorum slices for each validator
         let mut validator_slices: HashMap<String, Vec<HashSet<String>>> = HashMap::new();
-        
+
         for validator_key in self.nodes.keys() {
             let slices = self.compute_quorum_slices(validator_key);
             validator_slices.insert(validator_key.clone(), slices);
@@ -101,18 +101,18 @@ impl QuorumGraph {
 
         // Compare all pairs of validators
         let validators: Vec<_> = self.nodes.keys().cloned().collect();
-        
+
         for i in 0..validators.len() {
             for j in (i + 1)..validators.len() {
                 let v1 = &validators[i];
                 let v2 = &validators[j];
 
-                if let (Some(slices1), Some(slices2)) = 
-                    (validator_slices.get(v1), validator_slices.get(v2)) {
-                    
+                if let (Some(slices1), Some(slices2)) =
+                    (validator_slices.get(v1), validator_slices.get(v2))
+                {
                     // Find maximum overlap between any pair of slices
                     let mut max_pair_overlap = 0;
-                    
+
                     for slice1 in slices1 {
                         for slice2 in slices2 {
                             let overlap = self.check_quorum_intersection_size(slice1, slice2);
@@ -151,7 +151,7 @@ impl QuorumGraph {
     }
 
     /// Compute all possible quorum slices for a validator
-    /// 
+    ///
     /// A quorum slice is a minimal set of validators that satisfies the threshold
     fn compute_quorum_slices(&self, validator_key: &str) -> Vec<HashSet<String>> {
         let node = match self.nodes.get(validator_key) {
@@ -168,7 +168,7 @@ impl QuorumGraph {
     fn enumerate_slices(&self, qset: &QuorumSetInfo, slices: &mut Vec<HashSet<String>>) {
         // Collect all validators (direct + from inner sets)
         let mut all_validators = qset.validators.clone();
-        
+
         // Add validators from inner sets
         for inner_set in &qset.inner_sets {
             all_validators.extend(inner_set.validators.clone());
@@ -181,7 +181,7 @@ impl QuorumGraph {
         // Generate combinations that meet the threshold
         let threshold = qset.threshold as usize;
         let combinations = self.generate_combinations(&all_validators, threshold);
-        
+
         for combo in combinations {
             slices.push(combo);
         }
@@ -190,12 +190,12 @@ impl QuorumGraph {
     /// Generate all combinations of size k from the given validators
     fn generate_combinations(&self, validators: &[String], k: usize) -> Vec<HashSet<String>> {
         let mut result = Vec::new();
-        
+
         if k == 0 {
             result.push(HashSet::new());
             return result;
         }
-        
+
         if k > validators.len() {
             return result;
         }
@@ -226,7 +226,7 @@ impl QuorumGraph {
     }
 
     /// Check if the quorum graph has valid quorum intersection
-    /// 
+    ///
     /// Quorum intersection means any two quorum slices share at least one node
     fn has_quorum_intersection(&self) -> bool {
         if self.nodes.is_empty() {
@@ -235,7 +235,7 @@ impl QuorumGraph {
 
         // Get all quorum slices for all validators
         let mut all_slices = Vec::new();
-        
+
         for validator_key in self.nodes.keys() {
             let slices = self.compute_quorum_slices(validator_key);
             all_slices.extend(slices);
@@ -258,7 +258,11 @@ impl QuorumGraph {
     }
 
     /// Calculate the size of intersection between two quorum slices
-    fn check_quorum_intersection_size(&self, slice_a: &HashSet<String>, slice_b: &HashSet<String>) -> usize {
+    fn check_quorum_intersection_size(
+        &self,
+        slice_a: &HashSet<String>,
+        slice_b: &HashSet<String>,
+    ) -> usize {
         slice_a.intersection(slice_b).count()
     }
 
@@ -291,8 +295,14 @@ mod tests {
     #[test]
     fn test_graph_creation() {
         let qsets = vec![
-            ("V1".to_string(), create_simple_quorum_set(vec!["V2".to_string(), "V3".to_string()], 2)),
-            ("V2".to_string(), create_simple_quorum_set(vec!["V1".to_string(), "V3".to_string()], 2)),
+            (
+                "V1".to_string(),
+                create_simple_quorum_set(vec!["V2".to_string(), "V3".to_string()], 2),
+            ),
+            (
+                "V2".to_string(),
+                create_simple_quorum_set(vec!["V1".to_string(), "V3".to_string()], 2),
+            ),
         ];
 
         let graph = QuorumGraph::from_quorum_sets(qsets);

@@ -27,7 +27,7 @@ impl ScpClient {
     }
 
     /// Query SCP state from a Stellar Core node
-    /// 
+    ///
     /// Endpoint: GET http://{pod_ip}:11626/scp?limit=1
     pub async fn query_scp_state(&self, pod_ip: &str) -> Result<ScpState> {
         let url = format!("http://{}:11626/scp?limit=1", pod_ip);
@@ -38,15 +38,18 @@ impl ScpClient {
 
         // Parse the SCP state from the response
         // The response is an array, we take the first element
-        let scp_array = json.as_array()
-            .ok_or_else(|| QuorumAnalysisError::ParseError("Expected array response".to_string()))?;
-        
+        let scp_array = json.as_array().ok_or_else(|| {
+            QuorumAnalysisError::ParseError("Expected array response".to_string())
+        })?;
+
         if scp_array.is_empty() {
-            return Err(QuorumAnalysisError::ParseError("Empty SCP state response".to_string()));
+            return Err(QuorumAnalysisError::ParseError(
+                "Empty SCP state response".to_string(),
+            ));
         }
 
         let scp_obj = &scp_array[0];
-        
+
         // Extract node ID
         let node_id = scp_obj["node"]
             .as_str()
@@ -59,28 +62,28 @@ impl ScpClient {
 
         // Extract ballot state
         let ballot_state = super::types::BallotState {
-            phase: scp_obj["phase"]
-                .as_str()
-                .unwrap_or("UNKNOWN")
-                .to_string(),
-            ballot_counter: scp_obj["ballotCounter"]
-                .as_u64()
-                .unwrap_or(0) as u32,
-            value_hash: scp_obj["valueHash"]
-                .as_str()
-                .unwrap_or("")
-                .to_string(),
+            phase: scp_obj["phase"].as_str().unwrap_or("UNKNOWN").to_string(),
+            ballot_counter: scp_obj["ballotCounter"].as_u64().unwrap_or(0) as u32,
+            value_hash: scp_obj["valueHash"].as_str().unwrap_or("").to_string(),
         };
 
         // Extract nomination state
         let nomination_state = super::types::NominationState {
             votes: scp_obj["votes"]
                 .as_array()
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default(),
             accepted: scp_obj["accepted"]
                 .as_array()
-                .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default(),
         };
 
@@ -93,7 +96,7 @@ impl ScpClient {
     }
 
     /// Query quorum information for a specific node
-    /// 
+    ///
     /// Endpoint: GET http://{pod_ip}:11626/quorum?node={node_id}&compact=false
     pub async fn query_quorum_info(
         &self,
@@ -119,7 +122,7 @@ impl ScpClient {
     }
 
     /// Query peer information
-    /// 
+    ///
     /// Endpoint: GET http://{pod_ip}:11626/peers
     pub async fn query_peers(&self, pod_ip: &str) -> Result<Vec<PeerInfo>> {
         let url = format!("http://{}:11626/peers", pod_ip);
@@ -149,7 +152,7 @@ impl ScpClient {
     }
 
     /// Retry HTTP request with exponential backoff
-    /// 
+    ///
     /// Attempts: 3 times with delays of 1s, 2s, 4s
     async fn retry_request(&self, url: &str, max_attempts: u32) -> Result<reqwest::Response> {
         let mut attempt = 0;
@@ -169,7 +172,7 @@ impl ScpClient {
                             max_attempts
                         );
                         last_error = Some(QuorumAnalysisError::HttpError(
-                            response.error_for_status().unwrap_err()
+                            response.error_for_status().unwrap_err(),
                         ));
                     }
                 }
@@ -193,9 +196,8 @@ impl ScpClient {
             }
         }
 
-        Err(last_error.unwrap_or_else(|| {
-            QuorumAnalysisError::ParseError("Max retries exceeded".to_string())
-        }))
+        Err(last_error
+            .unwrap_or_else(|| QuorumAnalysisError::ParseError("Max retries exceeded".to_string())))
     }
 }
 

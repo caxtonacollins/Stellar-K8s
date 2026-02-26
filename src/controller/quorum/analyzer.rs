@@ -8,8 +8,8 @@ use super::graph::QuorumGraph;
 use super::latency::ConsensusLatencyTracker;
 use super::scp_client::ScpClient;
 use super::types::QuorumSetInfo;
-use crate::crd::StellarNode;
 use crate::crd::types::Condition;
+use crate::crd::StellarNode;
 use chrono::{DateTime, Utc};
 use kube::api::{Patch, PatchParams};
 use kube::{Api, Client};
@@ -63,7 +63,7 @@ impl QuorumAnalyzer {
 
         // Query quorum sets from all validators
         let mut quorum_sets = Vec::new();
-        
+
         for pod_ip in &pod_ips {
             match self.scp_client.query_scp_state(pod_ip).await {
                 Ok(scp_state) => {
@@ -131,10 +131,10 @@ impl QuorumAnalyzer {
     }
 
     /// Calculate fragility score using weighted formula
-    /// 
+    ///
     /// Formula:
     /// fragility_score = w1 * critical_ratio + w2 * overlap_penalty + w3 * latency_penalty
-    /// 
+    ///
     /// where:
     ///   critical_ratio = critical_nodes / total_validators
     ///   overlap_penalty = 1.0 - (min_overlap / expected_overlap)
@@ -191,7 +191,7 @@ impl QuorumAnalyzer {
     /// Compute hash of quorum topology for cache invalidation
     fn compute_topology_hash(&self, quorum_sets: &[(String, QuorumSetInfo)]) -> u64 {
         let mut hasher = DefaultHasher::new();
-        
+
         for (node_id, qset) in quorum_sets {
             node_id.hash(&mut hasher);
             qset.threshold.hash(&mut hasher);
@@ -205,7 +205,8 @@ impl QuorumAnalyzer {
 
     /// Record a latency measurement
     pub fn record_latency(&mut self, validator: &str, ledger: u64, latency_ms: u64) {
-        self.latency_tracker.record_latency(validator, ledger, latency_ms);
+        self.latency_tracker
+            .record_latency(validator, ledger, latency_ms);
     }
 
     /// Update the StellarNodeStatus with quorum analysis results
@@ -219,15 +220,16 @@ impl QuorumAnalyzer {
             QuorumAnalysisError::InvalidTopology("Node has no namespace".to_string())
         })?;
 
-        let name = node.metadata.name.as_ref().ok_or_else(|| {
-            QuorumAnalysisError::InvalidTopology("Node has no name".to_string())
-        })?;
+        let name =
+            node.metadata.name.as_ref().ok_or_else(|| {
+                QuorumAnalysisError::InvalidTopology("Node has no name".to_string())
+            })?;
 
         let api: Api<StellarNode> = Api::namespaced(client.clone(), namespace);
 
         // Build status patch
         let mut status = node.status.clone().unwrap_or_default();
-        
+
         // Update quorum fields
         status.quorum_fragility = Some(result.fragility_score);
         status.quorum_analysis_timestamp = Some(result.timestamp.to_rfc3339());
@@ -256,7 +258,9 @@ impl QuorumAnalyzer {
             }
         } else {
             // Remove Degraded condition if fragility is acceptable
-            status.conditions.retain(|c| c.type_ != "Degraded" || c.reason != "QuorumFragile");
+            status
+                .conditions
+                .retain(|c| c.type_ != "Degraded" || c.reason != "QuorumFragile");
         }
 
         // Patch the status
@@ -264,13 +268,10 @@ impl QuorumAnalyzer {
             "status": status
         });
 
-        let _: StellarNode = api.patch_status(
-            name,
-            &PatchParams::default(),
-            &Patch::Merge(&patch),
-        )
-        .await
-        .map_err(QuorumAnalysisError::KubeError)?;
+        let _: StellarNode = api
+            .patch_status(name, &PatchParams::default(), &Patch::Merge(&patch))
+            .await
+            .map_err(QuorumAnalysisError::KubeError)?;
 
         info!(
             "Updated status for {}/{} with fragility score {:.3}",
@@ -291,9 +292,10 @@ impl QuorumAnalyzer {
             QuorumAnalysisError::InvalidTopology("Node has no namespace".to_string())
         })?;
 
-        let name = node.metadata.name.as_ref().ok_or_else(|| {
-            QuorumAnalysisError::InvalidTopology("Node has no name".to_string())
-        })?;
+        let name =
+            node.metadata.name.as_ref().ok_or_else(|| {
+                QuorumAnalysisError::InvalidTopology("Node has no name".to_string())
+            })?;
 
         warn!(
             "Quorum analysis failed for {}/{}: {}",
@@ -302,7 +304,7 @@ impl QuorumAnalyzer {
 
         // Preserve last known good score, don't update timestamp
         // This ensures stale data is not propagated
-        
+
         Ok(())
     }
 }
@@ -320,7 +322,7 @@ mod tests {
     #[test]
     fn test_fragility_score_bounds() {
         let analyzer = QuorumAnalyzer::new(Duration::from_secs(10), 100);
-        
+
         // Test various scenarios
         let score1 = analyzer.calculate_fragility_score(0, 5, 0.0, 10);
         assert!(score1 >= 0.0 && score1 <= 1.0);

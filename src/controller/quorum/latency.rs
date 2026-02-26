@@ -44,10 +44,7 @@ impl ConsensusLatencyTracker {
             latency_ms,
         };
 
-        let measurements = self
-            .measurements
-            .entry(validator.to_string())
-            .or_default();
+        let measurements = self.measurements.entry(validator.to_string()).or_default();
 
         measurements.push_back(measurement);
 
@@ -78,10 +75,16 @@ impl ConsensusLatencyTracker {
         };
 
         let p95_idx = ((latencies.len() as f64) * 0.95) as usize;
-        let p95 = latencies.get(p95_idx.min(latencies.len() - 1)).copied().unwrap_or(0) as f64;
+        let p95 = latencies
+            .get(p95_idx.min(latencies.len() - 1))
+            .copied()
+            .unwrap_or(0) as f64;
 
         let p99_idx = ((latencies.len() as f64) * 0.99) as usize;
-        let p99 = latencies.get(p99_idx.min(latencies.len() - 1)).copied().unwrap_or(0) as f64;
+        let p99 = latencies
+            .get(p99_idx.min(latencies.len() - 1))
+            .copied()
+            .unwrap_or(0) as f64;
 
         // Calculate variance
         let variance = latencies
@@ -161,7 +164,7 @@ mod tests {
     #[test]
     fn test_window_size_enforcement() {
         let mut tracker = ConsensusLatencyTracker::new(3);
-        
+
         for i in 0..5 {
             tracker.record_latency("V1", i, 100);
         }

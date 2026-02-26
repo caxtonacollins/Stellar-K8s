@@ -1000,10 +1000,7 @@ pub(crate) async fn apply_stellar_node(
     // 6.5. Quorum analysis for validators
     if node.spec.node_type == NodeType::Validator && health_result.healthy {
         if let Err(e) = perform_quorum_analysis(client, node).await {
-            warn!(
-                "Quorum analysis failed for {}/{}: {}",
-                namespace, name, e
-            );
+            warn!("Quorum analysis failed for {}/{}: {}", namespace, name, e);
             // Don't fail reconciliation on quorum analysis errors
         }
     }
@@ -2198,32 +2195,33 @@ pub(crate) fn error_policy(
 /// Perform quorum analysis for validator nodes
 async fn perform_quorum_analysis(client: &Client, node: &StellarNode) -> Result<()> {
     use super::quorum::QuorumAnalyzer;
-    
+
     let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
     let name = node.name_any();
 
     // Get pod IPs for all validator pods
     let pod_api: Api<k8s_openapi::api::core::v1::Pod> = Api::namespaced(client.clone(), &namespace);
-    let lp = kube::api::ListParams::default()
-        .labels(&format!("app.kubernetes.io/instance={}", name));
-    
+    let lp =
+        kube::api::ListParams::default().labels(&format!("app.kubernetes.io/instance={}", name));
+
     let pods = pod_api.list(&lp).await.map_err(Error::KubeError)?;
     let pod_ips: Vec<String> = pods
         .items
         .iter()
-        .filter_map(|pod| {
-            pod.status.as_ref()?.pod_ip.clone()
-        })
+        .filter_map(|pod| pod.status.as_ref()?.pod_ip.clone())
         .collect();
 
     if pod_ips.is_empty() {
-        debug!("No pod IPs found for quorum analysis of {}/{}", namespace, name);
+        debug!(
+            "No pod IPs found for quorum analysis of {}/{}",
+            namespace, name
+        );
         return Ok(());
     }
 
     // Create analyzer and run analysis with timeout
     let mut analyzer = QuorumAnalyzer::new(Duration::from_secs(10), 100);
-    
+
     let analysis_future = analyzer.analyze_quorum(pod_ips);
     let result = tokio::time::timeout(Duration::from_secs(30), analysis_future)
         .await
@@ -2265,13 +2263,18 @@ async fn perform_quorum_analysis(client: &Client, node: &StellarNode) -> Result<
     }
 
     // Update status
-    analyzer.update_node_status(client, node, &result)
+    analyzer
+        .update_node_status(client, node, &result)
         .await
         .map_err(|e| Error::ConfigError(format!("Failed to update status: {}", e)))?;
 
     info!(
         "Quorum analysis complete for {}/{}: fragility={:.3}, critical_nodes={}, min_overlap={}",
-        namespace, name, result.fragility_score, result.critical_nodes.len(), result.min_overlap
+        namespace,
+        name,
+        result.fragility_score,
+        result.critical_nodes.len(),
+        result.min_overlap
     );
 
     Ok(())
