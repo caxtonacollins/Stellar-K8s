@@ -1,11 +1,10 @@
 //! Carbon-aware scheduler integration
 
 use crate::carbon_aware::api::CarbonIntensityAPI;
-use crate::carbon_aware::types::{CarbonAwareConfig, CarbonIntensityData, RegionCarbonData};
+use crate::carbon_aware::types::{CarbonAwareConfig, RegionCarbonData};
 use crate::error::Result;
 use k8s_openapi::api::core::v1::{Node, Pod};
 use kube::{Client, ResourceExt};
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
@@ -19,7 +18,7 @@ pub struct CarbonAwareScheduler {
     /// Cached carbon intensity data
     carbon_data: Arc<RwLock<RegionCarbonData>>,
     /// Kubernetes client
-    kube_client: Client,
+    _kube_client: Client,
 }
 
 impl CarbonAwareScheduler {
@@ -29,7 +28,7 @@ impl CarbonAwareScheduler {
             api,
             config,
             carbon_data: Arc::new(RwLock::new(RegionCarbonData::new())),
-            kube_client,
+            _kube_client: kube_client,
         }
     }
 
@@ -41,7 +40,7 @@ impl CarbonAwareScheduler {
         }
 
         let api = self.api.clone();
-        let config = self.config.clone();
+        let _config = self.config.clone();
         let carbon_data = self.carbon_data.clone();
 
         tokio::spawn(async move {
@@ -72,7 +71,7 @@ impl CarbonAwareScheduler {
     /// Score nodes based on carbon intensity
     pub async fn score_nodes_carbon_aware<'a>(
         &self,
-        pod: &Pod,
+        _pod: &Pod,
         candidates: &[&'a Node],
     ) -> Result<Vec<(f64, &'a Node)>> {
         if !self.config.enabled {

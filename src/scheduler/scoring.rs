@@ -42,7 +42,7 @@ fn should_use_carbon_aware_scheduling(pod: &Pod) -> bool {
 
 /// Carbon-aware scoring using mock data (for now)
 async fn score_nodes_carbon_aware<'a>(
-    pod: &Pod,
+    _pod: &Pod,
     candidates: &[&'a Node],
     _client: &Client,
 ) -> Result<Option<&'a Node>> {

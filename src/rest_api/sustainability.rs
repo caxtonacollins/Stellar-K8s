@@ -19,6 +19,7 @@ use tracing::{debug, info};
 
 /// Sustainability dashboard state
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct SustainabilityState {
     pub carbon_scheduler: Arc<CarbonAwareScheduler>,
     pub carbon_api: Arc<CarbonIntensityAPI>,
@@ -26,6 +27,7 @@ pub struct SustainabilityState {
 
 /// Sustainability metrics response
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 pub struct SustainabilityMetrics {
     /// Current timestamp
     pub timestamp: DateTime<Utc>,
@@ -47,6 +49,7 @@ pub struct SustainabilityMetrics {
 
 /// Region carbon information
 #[derive(Clone, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct RegionInfo {
     /// Region identifier
     pub region: String,
@@ -64,6 +67,7 @@ pub struct RegionInfo {
 
 /// Data status information
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 pub struct DataStatus {
     /// Last successful update
     pub last_updated: DateTime<Utc>,
@@ -75,6 +79,7 @@ pub struct DataStatus {
 
 /// Node CO2 footprint information
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 pub struct NodeFootprint {
     /// Node name
     pub node_name: String,
@@ -94,6 +99,7 @@ pub struct NodeFootprint {
 
 /// Carbon intensity history request
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)]
 pub struct CarbonHistoryRequest {
     /// Region to query
     pub region: String,
@@ -103,6 +109,7 @@ pub struct CarbonHistoryRequest {
 
 /// Carbon intensity forecast response
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 pub struct CarbonForecastResponse {
     /// Region identifier
     pub region: String,
@@ -114,6 +121,7 @@ pub struct CarbonForecastResponse {
 
 /// Single forecast data point
 #[derive(Serialize, Debug)]
+#[allow(dead_code)]
 pub struct ForecastPoint {
     /// Timestamp
     pub timestamp: DateTime<Utc>,
@@ -124,6 +132,7 @@ pub struct ForecastPoint {
 }
 
 /// Create sustainability dashboard router
+#[allow(dead_code)]
 pub fn sustainability_router() -> Router<SustainabilityState> {
     Router::new()
         .route("/metrics", get(get_sustainability_metrics))
@@ -135,6 +144,7 @@ pub fn sustainability_router() -> Router<SustainabilityState> {
 }
 
 /// Get overall sustainability metrics
+#[allow(dead_code)]
 pub async fn get_sustainability_metrics(
     State(state): State<SustainabilityState>,
 ) -> Result<Json<SustainabilityMetrics>, StatusCode> {
@@ -208,6 +218,7 @@ pub async fn get_sustainability_metrics(
 }
 
 /// Get region-specific carbon data
+#[allow(dead_code)]
 pub async fn get_region_data(
     State(state): State<SustainabilityState>,
 ) -> Result<Json<Vec<RegionInfo>>, StatusCode> {
@@ -234,6 +245,7 @@ pub async fn get_region_data(
 }
 
 /// Get detailed information for a specific region
+#[allow(dead_code)]
 pub async fn get_region_details(
     State(state): State<SustainabilityState>,
     axum::extract::Path(region): axum::extract::Path<String>,
@@ -261,8 +273,9 @@ pub async fn get_region_details(
 }
 
 /// Get carbon intensity forecast for a region
+#[allow(dead_code)]
 pub async fn get_carbon_forecast(
-    State(state): State<SustainabilityState>,
+    State(_state): State<SustainabilityState>,
     axum::extract::Path(region): axum::extract::Path<String>,
 ) -> Result<Json<CarbonForecastResponse>, StatusCode> {
     // For now, return mock forecast data
@@ -277,6 +290,7 @@ pub async fn get_carbon_forecast(
 }
 
 /// Get CO2 footprint information for managed nodes
+#[allow(dead_code)]
 pub async fn get_node_footprints(
     State(_state): State<SustainabilityState>,
 ) -> Result<Json<Vec<NodeFootprint>>, StatusCode> {
@@ -286,6 +300,7 @@ pub async fn get_node_footprints(
 }
 
 /// Check carbon API health
+#[allow(dead_code)]
 pub async fn get_carbon_api_health(
     State(state): State<SustainabilityState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
@@ -305,6 +320,7 @@ pub async fn get_carbon_api_health(
 }
 
 /// Generate mock node footprint data
+#[allow(dead_code)]
 async fn generate_mock_node_footprints(regions: &[RegionInfo]) -> Vec<NodeFootprint> {
     // Mock node data with realistic power consumption
     let mock_nodes = vec![
@@ -342,6 +358,7 @@ async fn generate_mock_node_footprints(regions: &[RegionInfo]) -> Vec<NodeFootpr
 }
 
 /// Generate mock forecast data
+#[allow(dead_code)]
 fn generate_mock_forecast(region: &str) -> Vec<ForecastPoint> {
     let mut forecast = Vec::new();
     let now = Utc::now();

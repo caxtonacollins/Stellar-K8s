@@ -5,8 +5,7 @@ use crate::error::Result;
 use chrono::Utc;
 use reqwest::Client;
 use serde_json::Value;
-use std::collections::HashMap;
-use tracing::{debug, error, info, warn};
+use tracing::{info, warn};
 
 /// Carbon intensity API client
 #[derive(Clone)]
