@@ -30,7 +30,7 @@ mod tests {
                 name: Some(name.to_string()),
                 namespace: Some(namespace.to_string()),
                 generation: Some(1),
-                uid: Some(format!("test-uid-{}", name)),
+                uid: Some(format!("test-uid-{name}")),
                 finalizers: Some(vec![]),
                 ..Default::default()
             },
@@ -54,6 +54,7 @@ mod tests {
                     size: "100Gi".to_string(),
                     retention_policy: Default::default(),
                     annotations: None,
+                    ..Default::default()
                 },
                 validator_config: Some(ValidatorConfig {
                     seed_secret_ref: "validator-seed".to_string(),
@@ -116,7 +117,7 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                 name: Some(name.to_string()),
                 namespace: Some(namespace.to_string()),
                 generation: Some(1),
-                uid: Some(format!("test-uid-{}", name)),
+                uid: Some(format!("test-uid-{name}")),
                 finalizers: Some(vec![]),
                 ..Default::default()
             },
@@ -140,6 +141,7 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                     size: "50Gi".to_string(),
                     retention_policy: Default::default(),
                     annotations: None,
+                    ..Default::default()
                 },
                 validator_config: None,
                 horizon_config: Some(HorizonConfig {
@@ -164,6 +166,7 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                         size: "20Gi".to_string(),
                         retention_policy: Default::default(),
                         annotations: None,
+                        ..Default::default()
                     },
                     backup: None,
                     pooling: None,
@@ -201,7 +204,7 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                 name: Some(name.to_string()),
                 namespace: Some(namespace.to_string()),
                 generation: Some(1),
-                uid: Some(format!("test-uid-{}", name)),
+                uid: Some(format!("test-uid-{name}")),
                 finalizers: Some(vec![]),
                 ..Default::default()
             },
@@ -225,6 +228,7 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
                     size: "200Gi".to_string(),
                     retention_policy: Default::default(),
                     annotations: None,
+                    ..Default::default()
                 },
                 validator_config: None,
                 horizon_config: None,
