@@ -262,12 +262,7 @@ pub async fn ensure_config_map(
     let cm = build_config_map(node, quorum_override, enable_mtls);
 
     let patch = Patch::Apply(&cm);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -427,12 +422,7 @@ pub async fn ensure_deployment(
     let deployment = build_deployment(node, enable_mtls);
 
     let patch = Patch::Apply(&deployment);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -481,12 +471,7 @@ pub async fn ensure_canary_deployment(
     }
 
     let patch = Patch::Apply(&deployment);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -551,12 +536,7 @@ pub async fn ensure_statefulset(
     let statefulset = build_statefulset(node, enable_mtls, seed_injection);
 
     let patch = Patch::Apply(&statefulset);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -643,7 +623,12 @@ pub async fn delete_workload(client: &Client, node: &StellarNode, dry_run: bool)
 
 /// Ensure a Service exists for the node
 #[instrument(skip(client, node), fields(name = %node.name_any(), namespace = node.namespace()))]
-pub async fn ensure_service(client: &Client, node: &StellarNode, enable_mtls: bool, dry_run: bool) -> Result<()> {
+pub async fn ensure_service(
+    client: &Client,
+    node: &StellarNode,
+    enable_mtls: bool,
+    dry_run: bool,
+) -> Result<()> {
     let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
     let api: Api<Service> = Api::namespaced(client.clone(), &namespace);
     let name = node.name_any();
@@ -651,12 +636,7 @@ pub async fn ensure_service(client: &Client, node: &StellarNode, enable_mtls: bo
     let service = build_service(node, enable_mtls);
 
     let patch = Patch::Apply(&service);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -696,12 +676,7 @@ pub async fn ensure_canary_service(
     }
 
     let patch = Patch::Apply(&service);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     Ok(())
 }
@@ -819,12 +794,7 @@ pub async fn ensure_cnpg_cluster(client: &Client, node: &StellarNode, dry_run: b
     let cluster = build_cnpg_cluster(node, managed_db);
 
     let patch = Patch::Apply(&cluster);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     info!("CNPG Cluster ensured for {}/{}", namespace, name);
     Ok(())
@@ -925,12 +895,7 @@ pub async fn ensure_cnpg_pooler(client: &Client, node: &StellarNode, dry_run: bo
     let pooler = build_cnpg_pooler(node, pgbouncer);
 
     let patch = Patch::Apply(&pooler);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     info!("CNPG Pooler ensured for {}/{}", namespace, name);
     Ok(())
@@ -985,7 +950,11 @@ fn build_cnpg_pooler(node: &StellarNode, config: &crate::crd::PgBouncerConfig) -
 }
 
 #[instrument(skip(client, node), fields(name = %node.name_any(), namespace = node.namespace()))]
-pub async fn delete_cnpg_resources(client: &Client, node: &StellarNode, dry_run: bool) -> Result<()> {
+pub async fn delete_cnpg_resources(
+    client: &Client,
+    node: &StellarNode,
+    dry_run: bool,
+) -> Result<()> {
     if node.spec.managed_database.is_none() {
         return Ok(());
     }
@@ -1031,12 +1000,8 @@ pub async fn ensure_ingress(client: &Client, node: &StellarNode, dry_run: bool) 
 
     let ingress = build_ingress(node, ingress_cfg);
 
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &Patch::Apply(&ingress),
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &Patch::Apply(&ingress))
+        .await?;
 
     info!("Ingress ensured for {}/{}", namespace, name);
 
@@ -1747,12 +1712,7 @@ pub async fn ensure_hpa(client: &Client, node: &StellarNode, dry_run: bool) -> R
     let hpa = build_hpa(node)?;
 
     let patch = Patch::Apply(&hpa);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     info!("HPA ensured for {}/{}", namespace, name);
     Ok(())
@@ -1824,12 +1784,7 @@ pub async fn ensure_alerting(client: &Client, node: &StellarNode, dry_run: bool)
 
     let api: Api<ConfigMap> = Api::namespaced(client.clone(), &namespace);
     let patch = Patch::Apply(&cm);
-    api.patch(
-        &name,
-        &patch_params(dry_run),
-        &patch,
-    )
-    .await?;
+    api.patch(&name, &patch_params(dry_run), &patch).await?;
 
     info!(
         "Alerting ConfigMap {} ensured for {}/{}",
@@ -2037,7 +1992,11 @@ pub async fn delete_alerting(client: &Client, node: &StellarNode, dry_run: bool)
     Ok(())
 }
 
-pub async fn delete_canary_resources(client: &Client, node: &StellarNode, dry_run: bool) -> Result<()> {
+pub async fn delete_canary_resources(
+    client: &Client,
+    node: &StellarNode,
+    dry_run: bool,
+) -> Result<()> {
     let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
     let name = node.name_any();
     let canary_name = format!("{name}-canary");
@@ -2063,7 +2022,11 @@ pub async fn delete_canary_resources(client: &Client, node: &StellarNode, dry_ru
 // ============================================================================
 
 #[instrument(skip(client, node), fields(name = %node.name_any(), namespace = node.namespace()))]
-pub async fn ensure_network_policy(client: &Client, node: &StellarNode, dry_run: bool) -> Result<()> {
+pub async fn ensure_network_policy(
+    client: &Client,
+    node: &StellarNode,
+    dry_run: bool,
+) -> Result<()> {
     let policy_cfg = match &node.spec.network_policy {
         Some(cfg) if cfg.enabled => cfg,
         _ => return Ok(()),
@@ -2240,7 +2203,11 @@ fn build_network_policy(node: &StellarNode, config: &NetworkPolicyConfig) -> Net
 }
 
 #[instrument(skip(client, node), fields(name = %node.name_any(), namespace = node.namespace()))]
-pub async fn delete_network_policy(client: &Client, node: &StellarNode, dry_run: bool) -> Result<()> {
+pub async fn delete_network_policy(
+    client: &Client,
+    node: &StellarNode,
+    dry_run: bool,
+) -> Result<()> {
     let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
     let api: Api<NetworkPolicy> = Api::namespaced(client.clone(), &namespace);
     let name = resource_name(node, "netpol");

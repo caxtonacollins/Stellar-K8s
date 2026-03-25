@@ -263,12 +263,13 @@ where
         };
         let message = format!("Dry Run: Would {action} {resource_info}");
         info!("{}", message);
-        
         // Enhanced logging with resource type and namespace
         let namespace = node.namespace().unwrap_or_else(|| "default".to_string());
         let name = node.name_any();
-        debug!("Dry Run: {} {}/{} - {}", action, namespace, name, resource_info);
-        
+        debug!(
+            "Dry Run: {} {}/{} - {}",
+            action, namespace, name, resource_info
+        );
         emit_event(&ctx.client, node, "Normal", reason, &message).await?;
         Ok(())
     } else {
@@ -412,15 +413,24 @@ pub(crate) async fn apply_stellar_node(
             "Suspended state resources",
             async {
                 resources::ensure_pvc(client, node, ctx.dry_run).await?;
-                resources::ensure_config_map(client, node, None, ctx.enable_mtls, ctx.dry_run).await?;
+                resources::ensure_config_map(client, node, None, ctx.enable_mtls, ctx.dry_run)
+                    .await?;
 
                 match node.spec.node_type {
                     NodeType::Validator => {
                         // Suspended validators don't need seed injection resolved
-                        resources::ensure_statefulset(client, node, ctx.enable_mtls, None, ctx.dry_run).await?;
+                        resources::ensure_statefulset(
+                            client,
+                            node,
+                            ctx.enable_mtls,
+                            None,
+                            ctx.dry_run,
+                        )
+                        .await?;
                     }
                     NodeType::Horizon | NodeType::SorobanRpc => {
-                        resources::ensure_deployment(client, node, ctx.enable_mtls, ctx.dry_run).await?;
+                        resources::ensure_deployment(client, node, ctx.enable_mtls, ctx.dry_run)
+                            .await?;
                     }
                 }
 
@@ -686,8 +696,14 @@ pub(crate) async fn apply_stellar_node(
 
     // 3. Create/update the ConfigMap for node configuration
     apply_or_emit(ctx, node, ActionType::Update, "ConfigMap", async {
-        resources::ensure_config_map(client, node, quorum_override.clone(), ctx.enable_mtls, ctx.dry_run)
-            .await?;
+        resources::ensure_config_map(
+            client,
+            node,
+            quorum_override.clone(),
+            ctx.enable_mtls,
+            ctx.dry_run,
+        )
+        .await?;
         Ok(())
     })
     .await?;
