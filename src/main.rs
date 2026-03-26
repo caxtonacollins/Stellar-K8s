@@ -704,6 +704,10 @@ async fn run_operator(args: RunArgs) -> Result<(), Error> {
         mtls_config: mtls_config.clone(),
         dry_run: args.dry_run,
         is_leader: Arc::clone(&is_leader),
+        event_reporter: kube::runtime::events::Reporter {
+            controller: "stellar-operator".to_string(),
+            instance: None,
+        },
         operator_config: Arc::new(operator_config),
     });
 

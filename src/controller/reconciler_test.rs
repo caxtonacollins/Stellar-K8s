@@ -310,6 +310,10 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
             mtls_config: None,
             dry_run: true,
             is_leader: Arc::new(AtomicBool::new(true)),
+            event_reporter: kube::runtime::events::Reporter {
+                controller: "stellar-operator".to_string(),
+                instance: None,
+            },
             operator_config: Arc::new(Default::default()),
         });
 
@@ -339,6 +343,10 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
             mtls_config: None,
             dry_run: true,
             is_leader: Arc::new(AtomicBool::new(true)),
+            event_reporter: kube::runtime::events::Reporter {
+                controller: "stellar-operator".to_string(),
+                instance: None,
+            },
             operator_config: Arc::new(Default::default()),
         });
 
@@ -367,6 +375,10 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
             mtls_config: None,
             dry_run: true,
             is_leader: Arc::new(AtomicBool::new(true)),
+            event_reporter: kube::runtime::events::Reporter {
+                controller: "stellar-operator".to_string(),
+                instance: None,
+            },
             operator_config: Arc::new(Default::default()),
         });
 
@@ -587,6 +599,10 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
             mtls_config: None,
             dry_run: false,
             is_leader: Arc::new(AtomicBool::new(true)),
+            event_reporter: kube::runtime::events::Reporter {
+                controller: "stellar-operator".to_string(),
+                instance: None,
+            },
             operator_config: Arc::new(Default::default()),
         };
 
@@ -611,6 +627,10 @@ VALIDATORS=["VALIDATOR1", "VALIDATOR2"]"#
             mtls_config: None,
             dry_run: true,
             is_leader: Arc::new(AtomicBool::new(true)),
+            event_reporter: kube::runtime::events::Reporter {
+                controller: "stellar-operator".to_string(),
+                instance: None,
+            },
             operator_config: Arc::new(Default::default()),
         };
 
