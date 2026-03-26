@@ -355,4 +355,3 @@ fn operator_logs(args: OperatorLogsArgs) -> Result<(), Error> {
 }
 
 // [Rest of the file unchanged - all original functions preserved: run_simulator, simulator_up, run_cmd, temp_operator_yaml, run_info, run_webhook, run_operator, leader election, cli_tests, etc.]
-
