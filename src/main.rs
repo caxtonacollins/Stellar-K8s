@@ -1,3 +1,4 @@
+use std::process::{self};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -80,6 +81,17 @@ struct RunArgs {
     #[arg(long, env = "OPERATOR_NAMESPACE", default_value = "default")]
     namespace: String,
 
+    /// Restrict the operator to only watch and manage StellarNode resources in a specific namespace.
+    ///
+    /// When unset (default), the operator watches all namespaces and requires cluster-wide RBAC.
+    /// When set, the operator only reconciles StellarNodes in this namespace and can run with
+    /// namespace-scoped RBAC (Role/RoleBinding).
+    /// Env: WATCH_NAMESPACE
+    ///
+    /// Example: --watch-namespace stellar-prod
+    #[arg(long, env = "WATCH_NAMESPACE")]
+    watch_namespace: Option<String>,
+
     /// Simulate reconciliation without applying any changes to the cluster.
     ///
     /// All reconciliation logic runs normally, but no Kubernetes API write calls are made.
@@ -121,8 +133,9 @@ struct RunArgs {
     /// Example: --dump-config
     #[arg(long)]
     dump_config: bool,
-
-    /// Run preflight checks and exit without starting the operator
+  
+    /// Run preflight checks and exit without starting the operator.
+    /// Env: PREFLIGHT_ONLY
     #[arg(long, env = "PREFLIGHT_ONLY")]
     preflight_only: bool,
 }
@@ -266,7 +279,7 @@ async fn main() -> Result<(), Error> {
         Commands::Run(run_args) => {
             if let Err(e) = run_args.validate() {
                 eprintln!("error: {e}");
-                std::process::exit(2);
+                process::exit(2);
             }
             return run_operator(run_args).await;
         }
@@ -544,6 +557,7 @@ async fn run_operator(args: RunArgs) -> Result<(), Error> {
         let resolved = serde_json::json!({
             "cli": {
                 "namespace": args.namespace,
+                "watch_namespace": args.watch_namespace,
                 "enable_mtls": args.enable_mtls,
                 "dry_run": args.dry_run,
                 "scheduler": args.scheduler,
@@ -587,6 +601,12 @@ async fn run_operator(args: RunArgs) -> Result<(), Error> {
         "Starting Stellar-K8s Operator v{}",
         env!("CARGO_PKG_VERSION")
     );
+
+    // Initialise operator build-info metric (Issue #301)
+    #[cfg(feature = "metrics")]
+    {
+        stellar_k8s::controller::metrics::init_operator_info();
+    }
 
     // Initialize Kubernetes client
     let client = kube::Client::try_default()
@@ -695,15 +715,35 @@ async fn run_operator(args: RunArgs) -> Result<(), Error> {
         });
     }
 
+    // Update leader-status and uptime metrics every 10 s (Issue #301)
+    #[cfg(feature = "metrics")]
+    {
+        let is_leader_metrics = Arc::clone(&is_leader);
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+            loop {
+                interval.tick().await;
+                let leader = is_leader_metrics.load(std::sync::atomic::Ordering::Relaxed);
+                stellar_k8s::controller::metrics::set_leader_status(leader);
+                stellar_k8s::controller::metrics::inc_uptime_seconds(10);
+            }
+        });
+    }
+
     // Create shared controller state
     let operator_config = stellar_k8s::controller::OperatorConfig::load();
     let state = Arc::new(controller::ControllerState {
         client: client.clone(),
         enable_mtls: args.enable_mtls,
         operator_namespace: args.namespace.clone(),
+        watch_namespace: args.watch_namespace.clone(),
         mtls_config: mtls_config.clone(),
         dry_run: args.dry_run,
         is_leader: Arc::clone(&is_leader),
+        event_reporter: kube::runtime::events::Reporter {
+            controller: "stellar-operator".to_string(),
+            instance: None,
+        },
         operator_config: Arc::new(operator_config),
     });
 
@@ -717,6 +757,17 @@ async fn run_operator(args: RunArgs) -> Result<(), Error> {
             tracing::error!("Peer discovery manager error: {:?}", e);
         }
     });
+
+    // Start the feature-flag watcher (watches stellar-operator-config ConfigMap)
+    let feature_flags = controller::feature_flags::new_shared();
+    {
+        let ff_client = client.clone();
+        let ff_namespace = args.namespace.clone();
+        let ff_flags = feature_flags.clone();
+        tokio::spawn(async move {
+            controller::watch_feature_flags(ff_client, ff_namespace, ff_flags).await;
+        });
+    }
 
     // Start the REST API server and optional mTLS certificate rotation
     #[cfg(feature = "rest-api")]
@@ -1058,6 +1109,12 @@ mod cli_tests {
     fn run_namespace_flag() {
         let args = parse_run(&["--namespace", "stellar-system"]).unwrap();
         assert_eq!(args.namespace, "stellar-system");
+    }
+
+    #[test]
+    fn run_watch_namespace_flag() {
+        let args = parse_run(&["--watch-namespace", "stellar-prod"]).unwrap();
+        assert_eq!(args.watch_namespace, Some("stellar-prod".to_string()));
     }
 
     #[test]
